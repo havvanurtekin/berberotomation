@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Randevularım</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Hizmet</th>
+            <th>Çalışan</th>
+            <th>Tarih</th>
+            <th>Başlangıç</th>
+            <th>Bitiş</th>
+            <th>Onay</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for appointment in appointments %}
+        <tr>
+            <td>{{ appointment.service.name }}</td>
+            <td>{{ appointment.employee }}</td>
+            <td>{{ appointment.date }}</td>
+            <td>{{ appointment.start_time }}</td>
+            <td>{{ appointment.end_time }}</td>
+            <td>{{ appointment.is_confirmed }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">Henüz randevunuz yok.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

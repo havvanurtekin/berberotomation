@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Randevu Oluştur</h2>
+
+<form id="appointmentForm" method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label>Salon:</label>
+        {{ form.salon }}
+    </div>
+    <div class="mb-3">
+        <label>Çalışan:</label>
+        {{ form.employee }}
+    </div>
+    <div class="mb-3">
+        <label>Hizmet:</label>
+        {{ form.service }}
+    </div>
+    <div class="mb-3">
+        <label>Tarih:</label>
+        {{ form.date }}
+    </div>
+    <div class="mb-3">
+        <label>Başlangıç Saati:</label>
+        {{ form.start_time }}
+    </div>
+    <div class="mb-3">
+        <label>Bitiş Saati:</label>
+        {{ form.end_time }}
+    </div>
+    <button type="submit" class="btn btn-primary">Randevu Al</button>
+</form>
+
+<div id="message"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#appointmentForm').on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            type: "POST",
+            url: "{% url 'appointment_create' %}",
+            data: $(this).serialize(),
+            success: function(response) {
+                $('#message').html('<div class="alert alert-success">Randevu başarıyla oluşturuldu!</div>');
+            },
+            error: function(xhr) {
+                $('#message').html('<div class="alert alert-danger">' + xhr.responseText + '</div>');
+            }
+        });
+    });
+
+    // Salon seçimi ile çalışan ve hizmet filtreleme
+    $('#id_salon').change(function() {
+        this.form.submit();
+    });
+});
+</script>
+{% endblock %}

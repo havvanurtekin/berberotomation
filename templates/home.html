@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">Kuaför / Berber Otomasyon Sistemi</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <a href="/appointments/create/" class="btn btn-primary w-100 p-3">Randevu Oluştur</a>
+    </div>
+    <div class="col-md-4">
+        <a href="/appointments/list/" class="btn btn-success w-100 p-3">Randevularım</a>
+    </div>
+    <div class="col-md-4">
+        <a href="/salon/list/" class="btn btn-secondary w-100 p-3">Salonlar</a>
+    </div>
+    <div class="col-md-4">
+        <a href="/appointments/calendar/" class="btn btn-info w-100 p-3">Takvimim</a>
+    </div>
+
+</div>
+
+{% endblock %}
