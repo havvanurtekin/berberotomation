@@ -1,11 +1,11 @@
 from django import forms
 from .models import Appointment
-from employees.models import Employee
-from salon.models import Service
+from users.models import Person
+from salon.models import Service, Salon
 import datetime
 
 class AppointmentForm(forms.ModelForm):
-    salon = forms.ModelChoiceField(queryset=None, required=True)
+    salon = forms.ModelChoiceField(queryset=Salon.objects.all(), required=True)
 
     class Meta:
         model = Appointment
@@ -13,21 +13,20 @@ class AppointmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from salon.models import Salon
-        self.fields['salon'].queryset = Salon.objects.all()
-        self.fields['employee'].queryset = Employee.objects.none()
+
+        self.fields['employee'].queryset = Person.objects.filter(is_employee=True)
         self.fields['service'].queryset = Service.objects.none()
 
         if 'salon' in self.data:
             try:
                 salon_id = int(self.data.get('salon'))
-                self.fields['employee'].queryset = Employee.objects.filter(salon_id=salon_id)
+                self.fields['employee'].queryset = Person.objects.filter(is_employee=True, salon_id=salon_id)
                 self.fields['service'].queryset = Service.objects.filter(salon_id=salon_id)
             except (ValueError, TypeError):
                 pass
         elif self.instance.pk:
-            self.fields['employee'].queryset = self.instance.salon.employee_set.all()
-            self.fields['service'].queryset = self.instance.salon.services.all()
+            self.fields['employee'].queryset = Person.objects.filter(is_employee=True, salon=self.instance.salon)
+            self.fields['service'].queryset = Service.objects.filter(salon=self.instance.salon)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -37,15 +36,17 @@ class AppointmentForm(forms.ModelForm):
         service = cleaned_data.get("service")
 
         if employee and date and start_time and service:
-            end_time = (datetime.datetime.combine(date, start_time) +
-                        datetime.timedelta(minutes=service.duration)).time()
+            dt_start = datetime.datetime.combine(date, start_time)
+            dt_end = dt_start + datetime.timedelta(minutes=service.duration)
+            end_time = dt_end.time()
 
             overlapping = Appointment.objects.filter(
                 employee=employee,
                 date=date,
                 start_time__lt=end_time,
                 end_time__gt=start_time
-            )
+            ).exclude(pk=self.instance.pk)
+
             if overlapping.exists():
                 raise forms.ValidationError("Bu zaman diliminde çalışan zaten dolu.")
 

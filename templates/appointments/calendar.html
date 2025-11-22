@@ -9,7 +9,7 @@
             <th>Bitiş</th>
             <th>Hizmet</th>
             <th>Çalışan</th>
-            <th>Onay</th>
+            <th>Durum</th>
         </tr>
     </thead>
     <tbody>
@@ -21,7 +21,7 @@
             <td>{{ appt.service.name }}</td>
             <td>{{ appt.employee }}</td>
             <td>
-                    {% if not appt.is_confirmed %}
+                {% if appt.status == "pending" %}
                     <form method="post" action="{% url 'approve_appointment' appt.pk %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success">Onayla</button>
@@ -33,9 +33,15 @@
                         <input type="text" name="rejection_note" placeholder="Açıklama girin">
                         <button type="submit" class="btn btn-danger">Gönder</button>
                     </form>
-                    {% else %}
+                {% elif appt.status == "confirmed" %}
                     Onaylandı
-                    {% endif %}
+                {% elif appt.status == "rejected" %}
+                    Reddedildi ({{ appt.rejection_note }})
+                {% elif appt.status == "cancelled" %}
+                    İptal Edildi
+                {% elif appt.status == "no_show" %}
+                    Gelmedi
+                {% endif %}
             </td>
         </tr>
         {% empty %}

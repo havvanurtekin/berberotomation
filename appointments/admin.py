@@ -3,11 +3,39 @@ from .models import Appointment
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
-    list_display = ('customer', 'employee', 'service', 'date', 'start_time', 'end_time', 'is_confirmed')
-    list_filter = ('is_confirmed', 'date', 'employee')
-    actions = ['confirm_appointments']
+    list_display = (
+        "customer",
+        "employee",
+        "salon",
+        "service",
+        "date",
+        "start_time",
+        "end_time",
+        "status",
+    )
+    list_filter = ("status", "salon", "date", "employee")
+    search_fields = ("customer__username", "employee__username", "service__name")
+    ordering = ("-date", "-start_time")
 
-    def confirm_appointments(self, request, queryset):
-        queryset.update(is_confirmed=True)
-        self.message_user(request, "Seçili randevular onaylandı.")
-    confirm_appointments.short_description = "Seçili randevuları onayla"
+    # readonly alanlar (snapshot değerleri geçmişi korumak için)
+    readonly_fields = ("price_snapshot", "duration_snapshot")
+
+    fieldsets = (
+        (None, {
+            "fields": (
+                "customer",
+                "employee",
+                "salon",
+                "service",
+                "date",
+                "start_time",
+                "end_time",
+                "status",
+                "rejection_note",
+            )
+        }),
+        ("Snapshot Bilgileri", {
+            "fields": ("price_snapshot", "duration_snapshot"),
+            "classes": ("collapse",),
+        }),
+    )

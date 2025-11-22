@@ -24,10 +24,13 @@ SECRET_KEY = 'django-insecure-4)=4vg^$82l_mn)ttfs1%gl9+n+yyjd8u_=k=ah^m80hvq3oyf
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+AUTH_USER_MODEL = 'users.Person'
 
 ALLOWED_HOSTS = []
 
-
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/appointments/list/'  # başarılı giriş sonrası yönlendirme
+LOGOUT_REDIRECT_URL = '/'
 # Application definition
 
 INSTALLED_APPS = [
@@ -40,8 +43,8 @@ INSTALLED_APPS = [
 
     #MYAPPS
     'salon',
-    'employees',
     'appointments',
+    'users',
 ]
 
 MIDDLEWARE = [
