@@ -2,6 +2,7 @@ from django.db import models
 from users.models import Person
 from salon.models import Service, Salon
 import datetime
+from django.core.exceptions import ValidationError
 
 class AppointmentStatus(models.TextChoices):
     PENDING = "pending", "Beklemede"
@@ -28,7 +29,7 @@ class Appointment(models.Model):
 
     date = models.DateField()
     start_time = models.TimeField()
-    end_time = models.TimeField()
+    end_time = models.TimeField(blank=True, null=True)
 
     status = models.CharField(
         max_length=20,
@@ -37,25 +38,32 @@ class Appointment(models.Model):
     )
     rejection_note = models.TextField(blank=True, null=True)
 
-    price_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
-    duration_snapshot = models.PositiveIntegerField()
+    # Snapshot alanları artık opsiyonel
+    price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    duration_snapshot = models.PositiveIntegerField(blank=True, null=True)
 
     class Meta:
         ordering = ["-date", "-start_time"]
 
     def __str__(self):
-        return f"{self.customer} - {self.service.name} - {self.date} {self.start_time}"
-
+        service_name = self.service.name if self.service_id else "Hizmet Yok"
+        return f"{self.customer} - {service_name} - {self.date} {self.start_time}"
     def clean(self):
-        if not self.duration_snapshot and self.service:
-            self.duration_snapshot = self.service.duration
-        if not self.price_snapshot and self.service:
-            self.price_snapshot = self.service.price
+        # 1) Hizmet erişimini sadece id varsa yap
+        if self.service_id:
+            # self.service'e erişim artık güvenli
+            service = self.service
+            if self.duration_snapshot is None:
+                self.duration_snapshot = service.duration
+            if self.price_snapshot is None:
+                self.price_snapshot = service.price
 
-        if not self.end_time and self.start_time and self.duration_snapshot:
+        # 2) end_time yalnızca tüm girdiler doluysa hesapla
+        if self.end_time is None and self.date and self.start_time and self.duration_snapshot:
             dt_start = datetime.datetime.combine(self.date, self.start_time)
             dt_end = dt_start + datetime.timedelta(minutes=self.duration_snapshot)
             self.end_time = dt_end.time()
 
+        # 3) Saat mantığı kontrolü (ValidationError kullan)
         if self.start_time and self.end_time and self.start_time >= self.end_time:
-            raise ValueError("Başlangıç saati bitişten önce olmalı.")
+            raise ValidationError("Başlangıç saati bitişten önce olmalı.")

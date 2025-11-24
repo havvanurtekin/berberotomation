@@ -10,46 +10,81 @@ class AppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
         fields = ['salon', 'employee', 'service', 'date', 'start_time', 'end_time']
+        widgets = {
+            'salon': forms.Select(attrs={'class': 'form-select'}),
+            'employee': forms.Select(attrs={'class': 'form-select'}),
+            'service': forms.Select(attrs={'class': 'form-select'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['salon'].widget.attrs.update({'class': 'form-select'})
 
-        self.fields['employee'].queryset = Person.objects.filter(is_employee=True)
+        # Başlangıçta boş
+        self.fields['employee'].queryset = Person.objects.none()
         self.fields['service'].queryset = Service.objects.none()
 
-        if 'salon' in self.data:
+        # Salon seçildiyse filtrele
+        data = self.data if self.is_bound else None
+        salon_id = None
+        if data and data.get('salon'):
             try:
-                salon_id = int(self.data.get('salon'))
-                self.fields['employee'].queryset = Person.objects.filter(is_employee=True, salon_id=salon_id)
-                self.fields['service'].queryset = Service.objects.filter(salon_id=salon_id)
-            except (ValueError, TypeError):
-                pass
-        elif self.instance.pk:
-            self.fields['employee'].queryset = Person.objects.filter(is_employee=True, salon=self.instance.salon)
-            self.fields['service'].queryset = Service.objects.filter(salon=self.instance.salon)
+                salon_id = int(data.get('salon'))
+            except (TypeError, ValueError):
+                salon_id = None
+
+        if salon_id:
+            self.fields['employee'].queryset = Person.objects.filter(is_employee=True, salon_id=salon_id)
+            self.fields['service'].queryset = Service.objects.filter(salon_id=salon_id)
+        elif self.instance and self.instance.salon_id:
+            self.fields['employee'].queryset = Person.objects.filter(is_employee=True, salon_id=self.instance.salon_id)
+            self.fields['service'].queryset = Service.objects.filter(salon_id=self.instance.salon_id)
 
     def clean(self):
-        cleaned_data = super().clean()
-        employee = cleaned_data.get("employee")
-        date = cleaned_data.get("date")
-        start_time = cleaned_data.get("start_time")
-        service = cleaned_data.get("service")
+        cleaned = super().clean()
+        salon = cleaned.get("salon")
+        employee = cleaned.get("employee")
+        service = cleaned.get("service")
+        date = cleaned.get("date")
+        start = cleaned.get("start_time")
+        end = cleaned.get("end_time")
 
-        if employee and date and start_time and service:
-            dt_start = datetime.datetime.combine(date, start_time)
+        # Salon seçilmeden personel/hizmet seçilemez
+        if not salon and (employee or service):
+            raise forms.ValidationError("Lütfen önce salon seçin.")
+
+        # Service varsa end_time otomatik hesapla
+        if service and date and start:
+            dt_start = datetime.datetime.combine(date, start)
             dt_end = dt_start + datetime.timedelta(minutes=service.duration)
-            end_time = dt_end.time()
+            cleaned['end_time'] = dt_end.time()
+            end = cleaned['end_time']
 
+        # Çakışma kontrolü
+        if employee and date and start and end:
             overlapping = Appointment.objects.filter(
                 employee=employee,
                 date=date,
-                start_time__lt=end_time,
-                end_time__gt=start_time
+                start_time__lt=end,
+                end_time__gt=start
             ).exclude(pk=self.instance.pk)
 
             if overlapping.exists():
-                raise forms.ValidationError("Bu zaman diliminde çalışan zaten dolu.")
+                raise forms.ValidationError("Bu saat aralığında çalışan zaten dolu.")
 
-            cleaned_data['end_time'] = end_time
+        # Başlangıç-bitiş kontrolü (15 dk kuralı)
+        if start and end:
+            dt_start = datetime.datetime.combine(date, start)
+            dt_end = datetime.datetime.combine(date, end)
+            diff_minutes = (dt_end - dt_start).total_seconds() / 60
 
-        return cleaned_data
+            if end <= start:
+                raise forms.ValidationError("Bitiş saati başlangıçtan önce olamaz.")
+            if diff_minutes < 15:
+                raise forms.ValidationError("Bitiş saati başlangıçtan en az 15 dakika sonra olmalı.")
+
+        return cleaned
+

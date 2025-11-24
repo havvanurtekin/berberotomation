@@ -1,42 +1,102 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Randevu Oluştur</h2>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- Form Kartı -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-calendar-plus"></i> Randevu Oluştur</h4>
+                </div>
+                <div class="card-body">
+                    <form id="appointmentForm" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-shop"></i> Salon</label>
+                            {{ form.salon }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-person-badge"></i> Çalışan</label>
+                            {{ form.employee }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-scissors"></i> Hizmet</label>
+                            {{ form.service }}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><i class="bi bi-calendar-date"></i> Tarih</label>
+                                {{ form.date }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label"><i class="bi bi-clock"></i> Başlangıç</label>
+                                {{ form.start_time }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label"><i class="bi bi-clock-history"></i> Bitiş</label>
+                                {{ form.end_time }}
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-circle"></i> Randevu Al
+                        </button>
+                    </form>
+                </div>
+            </div>
 
-<form id="appointmentForm" method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-        <label>Salon:</label>
-        {{ form.salon }}
-    </div>
-    <div class="mb-3">
-        <label>Çalışan:</label>
-        {{ form.employee }}
-    </div>
-    <div class="mb-3">
-        <label>Hizmet:</label>
-        {{ form.service }}
-    </div>
-    <div class="mb-3">
-        <label>Tarih:</label>
-        {{ form.date }}
-    </div>
-    <div class="mb-3">
-        <label>Başlangıç Saati:</label>
-        {{ form.start_time }}
-    </div>
-    <div class="mb-3">
-        <label>Bitiş Saati:</label>
-        {{ form.end_time }}
-    </div>
-    <button type="submit" class="btn btn-primary">Randevu Al</button>
-</form>
+            <!-- Dolu Saatler Kartı -->
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5><i class="bi bi-clock-fill"></i> Dolu Saatler</h5>
+                </div>
+                <div class="card-body">
+                    {% if busy_slots %}
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Çalışan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in busy_slots %}
+                                    <tr>
+                                        <td>{{ slot.date }}</td>
+                                        <td><span class="badge bg-danger">{{ slot.start }}</span></td>
+                                        <td><span class="badge bg-danger">{{ slot.end }}</span></td>
+                                        <td>{{ slot.employee }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted">Henüz dolu saat yok.</p>
+                    {% endif %}
+                </div>
+            </div>
 
-<div id="message"></div>
+            <div id="message" class="mt-3"></div>
+        </div>
+    </div>
+</div>
 
+<!-- JS Kodları -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
+$(function() {
+    // Salon seçildiğinde formu GET ile yeniden yükle
+    $('#id_salon').on('change', function() {
+        $('#appointmentForm').attr('method', 'get');
+        $('#appointmentForm').submit();
+    });
+
+    // Normal submit → AJAX POST
     $('#appointmentForm').on('submit', function(e) {
+        if ($(this).attr('method') === 'get') {
+            return; // GET için engelleme yok
+        }
         e.preventDefault();
         $.ajax({
             type: "POST",
@@ -46,14 +106,47 @@ $(document).ready(function() {
                 $('#message').html('<div class="alert alert-success">Randevu başarıyla oluşturuldu!</div>');
             },
             error: function(xhr) {
-                $('#message').html('<div class="alert alert-danger">' + xhr.responseText + '</div>');
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    $('#message').html('<div class="alert alert-danger">'+ JSON.stringify(data.errors) +'</div>');
+                } catch (_) {
+                    $('#message').html('<div class="alert alert-danger">Bir hata oluştu.</div>');
+                }
             }
         });
     });
 
-    // Salon seçimi ile çalışan ve hizmet filtreleme
-    $('#id_salon').change(function() {
-        this.form.submit();
+    // Tarih kontrolü
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = yyyy + '-' + mm + '-' + dd;
+    $('#id_date').attr('min', todayStr);
+
+    if (today.getHours() >= 17) {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const yyyy2 = tomorrow.getFullYear();
+        const mm2 = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const dd2 = String(tomorrow.getDate()).padStart(2, '0');
+        const tomorrowStr = yyyy2 + '-' + mm2 + '-' + dd2;
+        $('#id_date').attr('min', tomorrowStr);
+    }
+
+    // Başlangıç → Bitiş min kontrolü
+    $('#id_start_time').on('change', function() {
+        const start = $(this).val();
+        if (start) {
+            const [h, m] = start.split(':').map(Number);
+            const date = new Date();
+            date.setHours(h);
+            date.setMinutes(m + 15); // 15 dakika ekle
+            const hh = String(date.getHours()).padStart(2, '0');
+            const mm = String(date.getMinutes()).padStart(2, '0');
+            const minEnd = hh + ':' + mm;
+            $('#id_end_time').attr('min', minEnd);
+        }
     });
 });
 </script>

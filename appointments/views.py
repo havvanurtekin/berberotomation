@@ -5,32 +5,46 @@ from .forms import AppointmentForm
 from .models import Appointment, AppointmentStatus
 from users.models import Person   # Employee proxy yerine Person + filtre
 
+@login_required
 def create_appointment(request):
     if request.method == "POST":
         form = AppointmentForm(request.POST)
         if form.is_valid():
             appointment = form.save(commit=False)
-            # end_time form.clean() içinde hesaplanıyor
-            appointment.end_time = form.cleaned_data['end_time']
             appointment.customer = request.user
-            # snapshot alanlarını doldur
-            appointment.price_snapshot = appointment.service.price
-            appointment.duration_snapshot = appointment.service.duration
+            appointment.end_time = form.cleaned_data.get('end_time')
+
+            if appointment.service_id:
+                appointment.price_snapshot = appointment.service.price
+                appointment.duration_snapshot = appointment.service.duration
+
             appointment.save()
-
-            # AJAX kontrolü
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({"message": "Randevu başarıyla oluşturuldu"})
-
+                return JsonResponse({"message": "Randevu talebiniz başarıyla oluşturuldu"})
             return redirect('appointment_list')
-        else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({"errors": form.errors}, status=400)
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"errors": form.errors}, status=400)
+
     else:
-        form = AppointmentForm()
+        # GET parametresini formun içine veriyoruz
+        form = AppointmentForm(request.GET or None)
 
-    return render(request, "appointments/create.html", {"form": form})
+    # Dolu saatleri getir
+    appointments = Appointment.objects.all()
+    busy_slots = []
+    for a in appointments:
+        busy_slots.append({
+            "employee": a.employee,
+            "date": a.date,
+            "start": a.start_time,
+            "end": a.end_time,
+        })
 
+    return render(request, "appointments/create.html", {
+        "form": form,
+        "busy_slots": busy_slots
+    })
 
 @login_required
 def appointment_list(request):
