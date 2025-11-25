@@ -1,5 +1,42 @@
 {% extends "base.html" %}
+{% block title %}Salonlar - Berber Otomasyon{% endblock %}
+
 {% block content %}
-<h2>Salonlar</h2>
-<p>Burada salon listesi gösterilecek.</p>
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-lg border-0 rounded">
+            <div class="card-header bg-dark text-white text-center">
+                <h4>💈 Salonlar</h4>
+            </div>
+            <div class="card-body p-4">
+                {% if salons %}
+                    <div class="row">
+                        {% for salon in salons %}
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ salon.name }}</h5>
+                                        <p class="card-text text-muted">
+                                            📍 {{ salon.address }}<br>
+                                            📞 {{ salon.phone }}
+                                        </p>
+                                    </div>
+                                    <div class="card-footer text-center">
+                                        <a href="{% url 'salon_detail' salon.id %}" class="btn btn-outline-dark btn-sm">
+                                            Detayları Gör
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info text-center">
+                        Henüz kayıtlı salon bulunmamaktadır.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

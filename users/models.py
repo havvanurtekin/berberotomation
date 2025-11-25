@@ -1,12 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from salon.models import Salon, Service
+from django.core.exceptions import ValidationError
 
 class Person(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
-    is_customer = models.BooleanField(default=False)
-    is_employee = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
 
@@ -21,21 +20,12 @@ class Customer(Person):
     class Meta:
         proxy = True
 
-    def save(self, *args, **kwargs):
-        self.is_customer = True
-        super().save(*args, **kwargs)
-
-
 class Employee(Person):
     class Meta:
         proxy = True
 
-    def save(self, *args, **kwargs):
-        self.is_employee = True
-        super().save(*args, **kwargs)
-
 class Availability(models.Model):
-    employee = models.ForeignKey(Person, on_delete=models.CASCADE, limit_choices_to={"is_employee": True})
+    employee = models.ForeignKey(Person, on_delete=models.CASCADE)
     day = models.CharField(
         max_length=10,
         choices=[
@@ -48,3 +38,7 @@ class Availability(models.Model):
 
     def __str__(self):
         return f"{self.employee} - {self.day} {self.start_time}-{self.end_time}"
+
+    def clean(self):
+        if not isinstance(self.employee, Employee):
+            raise ValidationError("Sadece çalışanlar için uygunluk tanımlanabilir.")

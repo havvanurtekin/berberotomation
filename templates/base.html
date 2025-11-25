@@ -5,27 +5,50 @@
     <title>{% block title %}Berber Otomasyon{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="bg-light d-flex flex-column min-vh-100">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
     <div class="container">
-        <a class="navbar-brand" href="/">Berber Otomasyon</a>
-        <ul class="navbar-nav ms-auto">
-            {% if user.is_authenticated %}
-            <li class="nav-item"><a class="nav-link">{{ user.username }}</a></li>
-            <li class="nav-item"><a class="nav-link" href="/logout/">Çıkış</a></li>
-            {% else %}
-            <li class="nav-item"><a class="nav-link" href="/login/">Giriş Yap</a></li>
-            <li class="nav-item"><a lass="nav-link" href="/signup/">Kayıt Ol</a></li>
-            {% endif %}
-        </ul>
+        <a class="navbar-brand fw-bold" href="/">💈 Berber Otomasyon</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link active">👤 {{ user.username }}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">🚪 Çıkış</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login' %}">🔑 Giriş Yap</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'signup' %}">📝 Kayıt Ol</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
     </div>
 </nav>
 
-<div class="container">
+<!-- Main Content -->
+<main class="container my-4">
     {% block content %}
     {% endblock %}
-</div>
+</main>
 
+<!-- Footer -->
+<footer class="bg-dark text-white text-center py-3 mt-auto">
+    <div class="container">
+        <small>&copy; 2025 Berber Otomasyon | Tüm Hakları Saklıdır</small>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

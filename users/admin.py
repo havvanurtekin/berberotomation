@@ -4,9 +4,17 @@ from .models import Person, Customer, Employee
 # Ana kullanıcı modeli
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ("username", "get_full_name", "is_customer", "is_employee", "salon")
-    list_filter = ("is_customer", "is_employee", "salon")
+    list_display = ("username", "get_full_name", "role", "salon")
+    list_filter = ("salon",)
     search_fields = ("username", "first_name", "last_name")
+
+    def role(self, obj):
+        if isinstance(obj, Customer):
+            return "Customer"
+        elif isinstance(obj, Employee):
+            return "Employee"
+        return "Person"
+    role.short_description = "Rol"
 
 # Customer proxy modeli
 @admin.register(Customer)
@@ -15,9 +23,8 @@ class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("username", "first_name", "last_name")
 
     def get_queryset(self, request):
-        # sadece is_customer=True olanları göster
-        qs = super().get_queryset(request)
-        return qs.filter(is_customer=True)
+        # Proxy zaten Customer'ları gösterir
+        return super().get_queryset(request)
 
 # Employee proxy modeli
 @admin.register(Employee)
@@ -27,6 +34,5 @@ class EmployeeAdmin(admin.ModelAdmin):
     search_fields = ("username", "first_name", "last_name")
 
     def get_queryset(self, request):
-        # sadece is_employee=True olanları göster
-        qs = super().get_queryset(request)
-        return qs.filter(is_employee=True)
+        # Proxy zaten Employee'leri gösterir
+        return super().get_queryset(request)

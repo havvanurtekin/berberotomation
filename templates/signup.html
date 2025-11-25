@@ -1,9 +1,36 @@
 {% extends "base.html" %}
+{% block title %}Kayıt Ol - Berber Otomasyon{% endblock %}
+
 {% block content %}
-<h2>Kayıt Ol</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Kayıt Ol</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0 rounded">
+            <div class="card-header bg-dark text-white text-center">
+                <h4>Kayıt Ol</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small">
+                                    {{ field.errors|striptags }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-dark w-100">Kayıt Ol</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small>Zaten hesabınız var mı? <a href="{% url 'login' %}">Giriş Yap</a></small>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

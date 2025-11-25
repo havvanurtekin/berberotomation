@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .forms import AppointmentForm
 from .models import Appointment, AppointmentStatus
-from users.models import Person   # Employee proxy yerine Person + filtre
+from users.models import Employee
 
 @login_required
 def create_appointment(request):
@@ -55,13 +55,11 @@ def appointment_list(request):
 
 @login_required
 def appointment_calendar(request):
-    # giriş yapan kullanıcı çalışan mı?
-    if request.user.is_employee:
+    if isinstance(request.user, Employee):
         appointments = Appointment.objects.filter(employee=request.user)
     else:
         appointments = Appointment.objects.none()
     return render(request, "appointments/calendar.html", {"appointments": appointments})
-
 
 @login_required
 def approve_appointment(request, pk):

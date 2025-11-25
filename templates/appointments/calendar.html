@@ -1,54 +1,83 @@
 {% extends "base.html" %}
-{% block content %}
-<h2>Randevu Takvimi</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Tarih</th>
-            <th>Başlangıç</th>
-            <th>Bitiş</th>
-            <th>Hizmet</th>
-            <th>Çalışan</th>
-            <th>Durum</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for appt in appointments %}
-        <tr>
-            <td>{{ appt.date }}</td>
-            <td>{{ appt.start_time }}</td>
-            <td>{{ appt.end_time }}</td>
-            <td>{{ appt.service.name }}</td>
-            <td>{{ appt.employee }}</td>
-            <td>
-                {% if appt.status == "pending" %}
-                    <form method="post" action="{% url 'approve_appointment' appt.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success">Onayla</button>
-                    </form>
+{% block title %}Randevu Takvimi{% endblock %}
 
-                    <button type="button" onclick="showRejectForm({{ appt.pk }})" class="btn btn-danger">Reddet</button>
-                    <form method="post" action="{% url 'reject_appointment' appt.pk %}" id="reject-form-{{ appt.pk }}" style="display:none;">
-                        {% csrf_token %}
-                        <input type="text" name="rejection_note" placeholder="Açıklama girin">
-                        <button type="submit" class="btn btn-danger">Gönder</button>
-                    </form>
-                {% elif appt.status == "confirmed" %}
-                    Onaylandı
-                {% elif appt.status == "rejected" %}
-                    Reddedildi ({{ appt.rejection_note }})
-                {% elif appt.status == "cancelled" %}
-                    İptal Edildi
-                {% elif appt.status == "no_show" %}
-                    Gelmedi
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-lg border-0 rounded">
+            <div class="card-header bg-dark text-white text-center">
+                <h4>📅 Randevu Takvimi</h4>
+            </div>
+            <div class="card-body p-4">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Başlangıç</th>
+                            <th>Bitiş</th>
+                            <th>Hizmet</th>
+                            <th>Çalışan</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td>{{ appt.date }}</td>
+                            <td>{{ appt.start_time }}</td>
+                            <td>{{ appt.end_time }}</td>
+                            <td>{{ appt.service.name }}</td>
+                            <td>{{ appt.employee }}</td>
+                            <td>
+                                {% if appt.status == "pending" %}
+                                    <span class="badge bg-warning text-dark">Bekliyor</span>
+                                    <form method="post" action="{% url 'approve_appointment' appt.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Onayla</button>
+                                    </form>
+                                    <button type="button" onclick="showRejectForm({{ appt.pk }})" class="btn btn-sm btn-danger">Reddet</button>
+                                    <form method="post" action="{% url 'reject_appointment' appt.pk %}" id="reject-form-{{ appt.pk }}" style="display:none;" class="mt-2">
+                                        {% csrf_token %}
+                                        <input type="text" name="rejection_note" class="form-control form-control-sm mb-2" placeholder="Açıklama girin">
+                                        <button type="submit" class="btn btn-sm btn-danger">Gönder</button>
+                                    </form>
+                                {% elif appt.status == "confirmed" %}
+                                    <span class="badge bg-success">Onaylandı</span>
+                                {% elif appt.status == "rejected" %}
+                                    <span class="badge bg-danger">Reddedildi</span>
+                                    <small class="text-muted">({{ appt.rejection_note }})</small>
+                                {% elif appt.status == "cancelled" %}
+                                    <span class="badge bg-secondary">İptal Edildi</span>
+                                {% elif appt.status == "no_show" %}
+                                    <span class="badge bg-dark">Gelmedi</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Henüz randevunuz yok.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Boş zamanları göster -->
+                {% if free_slots %}
+                <h5 class="mt-4">🕒 Boş Zamanlar</h5>
+                <ul class="list-group">
+                    {% for slot in free_slots %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ slot.date }} {{ slot.start_time }} - {{ slot.end_time }}
+                            <span class="badge bg-info text-dark">Müsait</span>
+                        </li>
+                    {% endfor %}
+                </ul>
                 {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="6">Henüz randevunuz yok.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function showRejectForm(pk){
     var form = document.getElementById('reject-form-' + pk);
