@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect
-from .forms import SignUpForm
-from .models import Customer, Employee
-from django.contrib.auth import authenticate, login, login, logout
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+
+from .forms import SignUpForm
+from .models import Customer, Employee
+
 
 def signup_view(request, role="customer"):
     """
@@ -17,18 +19,20 @@ def signup_view(request, role="customer"):
         form = SignUpForm(request.POST, role=role)
         if form.is_valid():
             user = form.save(commit=False)
-            # Rolü belirle
+
+            # Proxy model üzerinden kaydet
             if role == "customer":
-                user.__class__ = Customer
+                user = Customer.objects.create(**user.__dict__)
             else:
-                user.__class__ = Employee
-            user.save()
+                user = Employee.objects.create(**user.__dict__)
+
             login(request, user)  # kayıt sonrası otomatik giriş
             return redirect("home")
     else:
         form = SignUpForm(role=role)
 
     return render(request, "signup.html", {"form": form, "role": role})
+
 
 @login_required
 def logout_view(request):
@@ -37,15 +41,16 @@ def logout_view(request):
 
 
 def login_view(request):
+    """
+    Basit login view. Django'nun AuthenticationForm'u kullanılıyor.
+    """
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect("home")  # giriş sonrası ana sayfaya yönlendir
+            user = form.get_user()
+            login(request, user)
+            return redirect("home")
     else:
         form = AuthenticationForm()
+
     return render(request, "login.html", {"form": form})

@@ -1,153 +1,241 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <!-- Form Kartı -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4><i class="bi bi-calendar-plus"></i> Randevu Oluştur</h4>
-                </div>
-                <div class="card-body">
-                    <form id="appointmentForm" method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label"><i class="bi bi-shop"></i> Salon</label>
-                            {{ form.salon }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label"><i class="bi bi-person-badge"></i> Çalışan</label>
-                            {{ form.employee }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label"><i class="bi bi-scissors"></i> Hizmet</label>
-                            {{ form.service }}
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label"><i class="bi bi-calendar-date"></i> Tarih</label>
-                                {{ form.date }}
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label"><i class="bi bi-clock"></i> Başlangıç</label>
-                                {{ form.start_time }}
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label"><i class="bi bi-clock-history"></i> Bitiş</label>
-                                {{ form.end_time }}
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-check-circle"></i> Randevu Al
-                        </button>
-                    </form>
-                </div>
-            </div>
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
 
-            <!-- Dolu Saatler Kartı -->
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header bg-secondary text-white">
-                    <h5><i class="bi bi-clock-fill"></i> Dolu Saatler</h5>
-                </div>
-                <div class="card-body">
-                    {% if busy_slots %}
-                        <table class="table table-sm table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Tarih</th>
-                                    <th>Başlangıç</th>
-                                    <th>Bitiş</th>
-                                    <th>Çalışan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for slot in busy_slots %}
-                                    <tr>
-                                        <td>{{ slot.date }}</td>
-                                        <td><span class="badge bg-danger">{{ slot.start }}</span></td>
-                                        <td><span class="badge bg-danger">{{ slot.end }}</span></td>
-                                        <td>{{ slot.employee }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p class="text-muted">Henüz dolu saat yok.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div id="message" class="mt-3"></div>
+      <!-- Form Kartı -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h4 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Randevu Oluştur</h4>
+          <small class="opacity-75">Salon → Çalışan/Hizmet filtreli, bitiş saati otomatik</small>
         </div>
+
+        <div class="card-body">
+          <form id="appointmentForm" method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Salon -->
+            <div class="mb-3">
+              <label class="form-label"><i class="bi bi-shop me-1"></i>Salon</label>
+              {{ form.salon }}
+              <div class="form-text">Salon değişince çalışan ve hizmet listesi filtrelenir.</div>
+            </div>
+
+            <!-- Çalışan -->
+            <div class="mb-3">
+              <label class="form-label"><i class="bi bi-person-badge me-1"></i>Çalışan</label>
+              {{ form.employee }}
+            </div>
+
+            <!-- Hizmet -->
+            <div class="mb-3">
+              <label class="form-label"><i class="bi bi-scissors me-1"></i>Hizmet</label>
+              {{ form.service }}
+              <div class="invalid-feedback" id="serviceError"></div>
+            </div>
+
+            <!-- Tarih / Saat -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label"><i class="bi bi-calendar-date me-1"></i>Tarih</label>
+                {{ form.date }}
+                <div class="invalid-feedback" id="dateError"></div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label"><i class="bi bi-clock me-1"></i>Başlangıç</label>
+                {{ form.start_time }}
+                <div class="invalid-feedback" id="startError"></div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label"><i class="bi bi-clock-history me-1"></i>Bitiş</label>
+                <input type="text" class="form-control" id="id_end_time" placeholder="--:--" readonly>
+                <div class="form-text">Hizmet süresine göre otomatik hesaplanır.</div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-check-circle me-1"></i>Randevu Al
+            </button>
+          </form>
+
+          <div id="message" class="mt-3"></div>
+        </div>
+      </div>
+      {% if available_slots %}
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5><i class="bi bi-clock-history"></i> Müsait Saatler</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            {% for slot in available_slots %}
+              {% if slot.status == "busy" %}
+                <button type="button" class="btn btn-danger slot-btn" disabled>
+                  {{ slot.start }} - {{ slot.end }}
+                </button>
+              {% else %}
+                <button type="button" class="btn btn-success slot-btn"
+                        data-start="{{ slot.start }}" data-end="{{ slot.end }}">
+                  {{ slot.start }} - {{ slot.end }}
+                </button>
+              {% endif %}
+            {% endfor %}
+
+
+          </div>
+          <div class="form-text mt-2">Bir slot seçtiğinizde saatler otomatik dolacaktır.</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Dolu Saatler -->
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0"><i class="bi bi-clock-fill me-2"></i>Dolu Saatler</h5>
+        </div>
+        <div class="card-body">
+          {% if busy_slots %}
+            <table class="table table-sm table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Başlangıç</th>
+                  <th>Bitiş</th>
+                  <th>Çalışan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for slot in busy_slots %}
+                  <tr>
+                    <td>{{ slot.date }}</td>
+                    <td><span class="badge bg-danger">{{ slot.start }}</span></td>
+                    <td><span class="badge bg-danger">{{ slot.end }}</span></td>
+                    <td>{{ slot.employee }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="text-muted mb-0">Henüz dolu saat yok.</p>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
+  </div>
 </div>
 
-<!-- JS Kodları -->
+<!-- JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function() {
-    // Salon seçildiğinde formu GET ile yeniden yükle
-    $('#id_salon').on('change', function() {
-        $('#appointmentForm').attr('method', 'get');
-        $('#appointmentForm').submit();
-    });
+  // Salon seçildiğinde: formu GET ile yeniden yükle → backend form queryset'leri salon'a göre filtreler
+  $('#id_salon, #id_employee, #id_service, #id_date').on('change', function() {
+    $('#appointmentForm').attr('method', 'get');
+    $('#appointmentForm')[0].submit();
+  });
 
-    // Normal submit → AJAX POST
-    $('#appointmentForm').on('submit', function(e) {
-        if ($(this).attr('method') === 'get') {
-            return; // GET için engelleme yok
-        }
-        e.preventDefault();
-        $.ajax({
-            type: "POST",
-            url: "{% url 'appointment_create' %}",
-            data: $(this).serialize(),
-            success: function(response) {
-                $('#message').html('<div class="alert alert-success">Randevu başarıyla oluşturuldu!</div>');
-            },
-            error: function(xhr) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    $('#message').html('<div class="alert alert-danger">'+ JSON.stringify(data.errors) +'</div>');
-                } catch (_) {
-                    $('#message').html('<div class="alert alert-danger">Bir hata oluştu.</div>');
-                }
-            }
-        });
-    });
 
-    // Tarih kontrolü
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const todayStr = yyyy + '-' + mm + '-' + dd;
+  // Tarih minimumu: bugün (17:00 sonrası → yarın)
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+  const afterFive = today.getHours() >= 17;
+  if (afterFive) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yyyy2 = tomorrow.getFullYear();
+    const mm2 = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const dd2 = String(tomorrow.getDate()).padStart(2, '0');
+    $('#id_date').attr('min', `${yyyy2}-${mm2}-${dd2}`);
+  } else {
     $('#id_date').attr('min', todayStr);
+  }
 
-    if (today.getHours() >= 17) {
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        const yyyy2 = tomorrow.getFullYear();
-        const mm2 = String(tomorrow.getMonth() + 1).padStart(2, '0');
-        const dd2 = String(tomorrow.getDate()).padStart(2, '0');
-        const tomorrowStr = yyyy2 + '-' + mm2 + '-' + dd2;
-        $('#id_date').attr('min', tomorrowStr);
+  // Bitiş saati: hizmet süresine göre otomatik (AJAX)
+  function updateEndTime() {
+    const serviceId = $('#id_service').val();
+    const startTime = $('#id_start_time').val();
+    const date = $('#id_date').val();
+
+    if (serviceId && startTime && date) {
+      $.get("{% url 'calculate_end_time' %}", {
+        service_id: serviceId,
+        start_time: startTime,
+        date: date
+      }).done(function(data) {
+        $('#id_end_time').val(data.end_time || '');
+      }).fail(function() {
+        $('#id_end_time').val('');
+      });
+    } else {
+      $('#id_end_time').val('');
     }
+  }
 
-    // Başlangıç → Bitiş min kontrolü
-    $('#id_start_time').on('change', function() {
-        const start = $(this).val();
-        if (start) {
-            const [h, m] = start.split(':').map(Number);
-            const date = new Date();
-            date.setHours(h);
-            date.setMinutes(m + 15); // 15 dakika ekle
-            const hh = String(date.getHours()).padStart(2, '0');
-            const mm = String(date.getMinutes()).padStart(2, '0');
-            const minEnd = hh + ':' + mm;
-            $('#id_end_time').attr('min', minEnd);
+  $('#id_service, #id_start_time, #id_date').on('change', updateEndTime);
+
+  // Submit: AJAX POST (GET yönlendirmesi varsa engelleme)
+  $('#appointmentForm').on('submit', function(e) {
+    if ($(this).attr('method') === 'get') return;
+
+    e.preventDefault();
+
+    // Basit ön kontrol
+    let valid = true;
+    const date = $('#id_date').val();
+    const start = $('#id_start_time').val();
+    const service = $('#id_service').val();
+
+    $('#dateError, #startError, #serviceError').text('');
+    $('#id_date, #id_start_time, #id_service').removeClass('is-invalid');
+
+    if (!date) { $('#id_date').addClass('is-invalid'); $('#dateError').text('Tarih seçin.'); valid = false; }
+    if (!start) { $('#id_start_time').addClass('is-invalid'); $('#startError').text('Başlangıç saati seçin.'); valid = false; }
+    if (!service) { $('#id_service').addClass('is-invalid'); $('#serviceError').text('Hizmet seçin.'); valid = false; }
+
+    if (!valid) return;
+
+    $.ajax({
+      type: "POST",
+      url: "{% url 'appointment_create' %}",
+      data: $(this).serialize(),
+      success: function(response) {
+        $('#message').html('<div class="alert alert-success">Randevu başarıyla oluşturuldu!</div>');
+        // Formu sıfırla ve bitiş saatini temizle
+        $('#appointmentForm')[0].reset();
+        $('#id_end_time').val('');
+      },
+      error: function(xhr) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          const errors = data.errors || {};
+          let html = '<div class="alert alert-danger"><ul class="mb-0">';
+          Object.keys(errors).forEach(function(field) {
+            html += `<li><strong>${field}:</strong> ${errors[field].join(', ')}</li>`;
+          });
+          html += '</ul></div>';
+          $('#message').html(html);
+        } catch (_) {
+          $('#message').html('<div class="alert alert-danger">Bir hata oluştu.</div>');
         }
+      }
     });
+  });
+
+  // İlk yüklemede bitiş saati (ör. GET ile salon seçimi sonrası)
+  updateEndTime();
 });
+$(document).on('click', '.slot-btn', function() {
+  const start = $(this).data('start');
+  const end = $(this).data('end');
+  $('#id_start_time').val(start);
+  $('#id_end_time').val(end);
+});
+
+
 </script>
 {% endblock %}
