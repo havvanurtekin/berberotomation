@@ -9,25 +9,14 @@ from users.models import Employee
 
 
 def generate_available_slots(employee, salon, date, service):
-    """
-    Çalışanın seçilen tarihteki uygun slotlarını üretir.
-    - Salonun açılış/kapanış saatleri baz alınır
-    - Çalışanın mevcut randevuları dolu kabul edilir
-    - Slot süresi seçilen hizmetin duration değerine göre belirlenir
-    """
-
-    # Salonun mesai saatlerini al
     start = datetime.combine(date, salon.opening_time)
     end = datetime.combine(date, salon.closing_time)
 
-    # Çalışanın o günkü randevularını al
     existing = Appointment.objects.filter(employee=employee, date=date)
     busy_ranges = [
         (datetime.combine(date, a.start_time), datetime.combine(date, a.end_time))
         for a in existing
     ]
-
-    # Hizmet süresi
     duration = service.duration if service else 15
 
     slots = []
@@ -49,29 +38,19 @@ def generate_available_slots(employee, salon, date, service):
 
         # Sonraki slot
         start += timedelta(minutes=duration)
-    print(slots)
+
     return slots
 
 
 @login_required
 def create_appointment(request):
     salon_id = request.GET.get("salon") or request.POST.get("salon")
-    print(salon_id)
+
     if request.method == "POST":
         form = AppointmentForm(request.POST, salon_id=salon_id)
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.customer = request.user
-
-            if appointment.service_id:
-                appointment.price_snapshot = appointment.service.price
-                appointment.duration_snapshot = appointment.service.duration
-
-                # Bitiş saatini hesapla
-                dt_start = datetime.combine(appointment.date, appointment.start_time)
-                dt_end = dt_start + timedelta(minutes=appointment.duration_snapshot)
-                appointment.end_time = dt_end.time()
-
             appointment.save()
 
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
@@ -83,6 +62,7 @@ def create_appointment(request):
     else:
         form = AppointmentForm(request.GET or None, salon_id=salon_id)
 
+    # Dolu slotlar
     busy_slots = [
         {
             "employee": a.employee,
@@ -93,6 +73,7 @@ def create_appointment(request):
         for a in Appointment.objects.all()
     ]
 
+    # Müsait slotlar
     available_slots = []
     salon = form.data.get("salon")
     employee = form.data.get("employee")
@@ -115,21 +96,6 @@ def create_appointment(request):
         "available_slots": available_slots,
     })
 
-
-
-@login_required
-def calculate_end_time(request):
-    service_id = request.GET.get("service_id")
-    start_time = request.GET.get("start_time")
-    date = request.GET.get("date")
-
-    try:
-        service = Service.objects.get(pk=service_id)
-        dt_start = datetime.strptime(f"{date} {start_time}", "%Y-%m-%d %H:%M")
-        dt_end = dt_start + timedelta(minutes=service.duration)
-        return JsonResponse({"end_time": dt_end.strftime("%H:%M")})
-    except Exception:
-        return JsonResponse({"error": "Hesaplama yapılamadı"}, status=400)
 
 @login_required
 def appointment_list(request):

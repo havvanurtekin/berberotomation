@@ -155,29 +155,6 @@ $(function() {
     $('#id_date').attr('min', todayStr);
   }
 
-  // Bitiş saati: hizmet süresine göre otomatik (AJAX)
-  function updateEndTime() {
-    const serviceId = $('#id_service').val();
-    const startTime = $('#id_start_time').val();
-    const date = $('#id_date').val();
-
-    if (serviceId && startTime && date) {
-      $.get("{% url 'calculate_end_time' %}", {
-        service_id: serviceId,
-        start_time: startTime,
-        date: date
-      }).done(function(data) {
-        $('#id_end_time').val(data.end_time || '');
-      }).fail(function() {
-        $('#id_end_time').val('');
-      });
-    } else {
-      $('#id_end_time').val('');
-    }
-  }
-
-  $('#id_service, #id_start_time, #id_date').on('change', updateEndTime);
-
   // Submit: AJAX POST (GET yönlendirmesi varsa engelleme)
   $('#appointmentForm').on('submit', function(e) {
     if ($(this).attr('method') === 'get') return;
@@ -225,9 +202,6 @@ $(function() {
       }
     });
   });
-
-  // İlk yüklemede bitiş saati (ör. GET ile salon seçimi sonrası)
-  updateEndTime();
 });
 $(document).on('click', '.slot-btn', function() {
   const start = $(this).data('start');
