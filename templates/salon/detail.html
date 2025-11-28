@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ salon.name }} - Detay{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-lg border-0">
+    <!-- Salon Görseli -->
+    {% if salon.image %}
+      <img src="{{ salon.image.url }}" class="card-img-top" alt="{{ salon.name }}">
+    {% else %}
+      <img src="https://via.placeholder.com/1200x400?text=Salon+Resmi" class="card-img-top" alt="Salon resmi">
+    {% endif %}
+
+    <div class="card-body">
+      <!-- Salon Başlık -->
+      <h2 class="card-title text-danger fw-bold mb-3">
+        💈 {{ salon.name }}
+      </h2>
+
+      <!-- Salon Bilgileri -->
+      <p class="card-text fs-5">
+        📍 <strong>Adres:</strong> {{ salon.address }} <br>
+        📞 <strong>Telefon:</strong> {{ salon.phone }} <br>
+        🕒 <strong>Çalışma Saatleri:</strong> {{ salon.opening_time }} - {{ salon.closing_time }}
+      </p>
+
+      <!-- Hizmetler -->
+      <h4 class="mt-4">✂️ Hizmetler</h4>
+      <ul class="list-group list-group-flush">
+        {% for service in salon.services.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ service.name }} ({{ service.duration }} dk)</span>
+            <span class="badge bg-success">{{ service.price }} ₺</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">Henüz hizmet eklenmemiş.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer text-center bg-light">
+      <a href="{% url 'salon_list' %}" class="btn btn-outline-secondary">
+        ← Salon Listesine Dön
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

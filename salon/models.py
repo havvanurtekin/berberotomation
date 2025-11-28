@@ -4,8 +4,10 @@ from django.db import models
 class Salon(models.Model):
     name = models.CharField(max_length=150)
     address = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20, blank=True, null=True)
     opening_time = models.TimeField()
     closing_time = models.TimeField()
+    image = models.ImageField(upload_to="salons/", blank=True, null=True)
 
     def __str__(self):
         return self.name
