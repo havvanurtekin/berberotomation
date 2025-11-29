@@ -17,13 +17,41 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
+                <!-- Kullanıcı adı -->
                 <li class="nav-item">
                     <a class="nav-link active">👤 {{ user.username }}</a>
                 </li>
+
+                <!-- Bildirimler -->
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle position-relative" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown">
+                    🔔 Bildirimler
+                    {% if unread_count %}
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ unread_count }}
+                      </span>
+                    {% endif %}
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                      {% for notif in unread_notifications %}
+                        <li>
+                          <a class="dropdown-item" href="{% url 'mark_notification_read' notif.id %}">
+                            {{ notif.message }}
+                          </a>
+                        </li>
+                      {% empty %}
+                        <li><span class="dropdown-item text-muted">Bildirim yok</span></li>
+                      {% endfor %}
+                    </ul>
+
+                </li>
+
+                <!-- Çıkış -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'logout' %}">🚪 Çıkış</a>
                 </li>
                 {% else %}
+                <!-- Giriş / Kayıt -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'login' %}">🔑 Giriş Yap</a>
                 </li>

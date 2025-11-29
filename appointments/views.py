@@ -6,6 +6,7 @@ from .forms import AppointmentForm
 from .models import Appointment, AppointmentStatus
 from salon.models import Salon, Service
 from users.models import Employee
+from notifications.models import Notification
 
 
 def generate_available_slots(employee, salon, date, service):
@@ -52,6 +53,12 @@ def create_appointment(request):
             appointment = form.save(commit=False)
             appointment.customer = request.user
             appointment.save()
+
+            Notification.objects.create(
+                user=appointment.employee,
+                message=f"{appointment.customer} yeni randevu talep etti.",
+                url="/appointments/calendar/"
+            )
 
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JsonResponse({"message": "Randevu başarıyla oluşturuldu"})
@@ -121,6 +128,13 @@ def approve_appointment(request, pk):
         appointment.status = AppointmentStatus.CONFIRMED
         appointment.rejection_note = ""
         appointment.save()
+
+        Notification.objects.create(
+            user=appointment.customer,
+            message=f"Randevu talebiniz {appointment.get_status_display()} oldu.",
+            url="/appointments/list/"
+        )
+
     return redirect("appointment_calendar")
 
 
@@ -132,4 +146,11 @@ def reject_appointment(request, pk):
         appointment.status = AppointmentStatus.REJECTED
         appointment.rejection_note = note
         appointment.save()
+
+        Notification.objects.create(
+            user=appointment.customer,
+            message=f"Randevu talebiniz {appointment.get_status_display()} oldu.",
+            url="/appointments/list/"
+        )
+
     return redirect("appointment_calendar")

@@ -1,30 +1,66 @@
 {% extends "base.html" %}
+{% block title %}Randevularım{% endblock %}
+
 {% block content %}
-<h2>Randevularım</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Hizmet</th>
-            <th>Çalışan</th>
-            <th>Tarih</th>
-            <th>Başlangıç</th>
-            <th>Bitiş</th>
-            <th>Durum</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for appointment in appointments %}
-        <tr>
-            <td>{{ appointment.service.name }}</td>
-            <td>{{ appointment.employee }}</td>
-            <td>{{ appointment.date }}</td>
-            <td>{{ appointment.start_time }}</td>
-            <td>{{ appointment.end_time }}</td>
-            <td>{{ appointment.get_status_display }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="6">Henüz randevunuz yok.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container mt-5">
+  <div class="card shadow-lg border-0">
+    <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+      <h4 class="mb-0"><i class="bi bi-calendar-check me-2"></i> Randevularım</h4>
+      <small class="opacity-75">Tüm geçmiş ve gelecek randevularınız burada listelenir</small>
+    </div>
+
+    <div class="card-body p-4">
+      {% if appointments %}
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th><i class="bi bi-scissors me-1"></i> Hizmet</th>
+              <th><i class="bi bi-person-badge me-1"></i> Çalışan</th>
+              <th><i class="bi bi-calendar-date me-1"></i> Tarih</th>
+              <th><i class="bi bi-clock me-1"></i> Başlangıç</th>
+              <th><i class="bi bi-clock-history me-1"></i> Bitiş</th>
+              <th><i class="bi bi-info-circle me-1"></i> Durum</th>
+              <th><i class="bi bi-chat-left-text me-1"></i> Açıklama</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appointment in appointments %}
+              <tr>
+                <td>{{ appointment.service.name }}</td>
+                <td>{{ appointment.employee }}</td>
+                <td>{{ appointment.date }}</td>
+                <td><span class="badge bg-success">{{ appointment.start_time }}</span></td>
+                <td><span class="badge bg-secondary">{{ appointment.end_time }}</span></td>
+                <td>
+                  {% if appointment.status == "confirmed" %}
+                    <span class="badge bg-success">{{ appointment.get_status_display }}</span>
+                  {% elif appointment.status == "pending" %}
+                    <span class="badge bg-warning text-dark">{{ appointment.get_status_display }}</span>
+                  {% elif appointment.status == "rejected" %}
+                    <span class="badge bg-danger">{{ appointment.get_status_display }}</span>
+                  {% elif appointment.status == "cancelled" %}
+                    <span class="badge bg-secondary">{{ appointment.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge bg-dark">{{ appointment.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if appointment.status == "rejected" and appointment.rejection_note %}
+                    <span class="text-danger">{{ appointment.rejection_note }}</span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="alert alert-info text-center mb-0">
+          Henüz randevunuz yok.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}

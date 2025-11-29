@@ -84,3 +84,4 @@ class Appointment(models.Model):
         # Mantık kontrolü
         if self.start_time and self.end_time and self.start_time >= self.end_time:
             raise ValidationError({"start_time": "Başlangıç saati bitişten önce olmalı."})
+
