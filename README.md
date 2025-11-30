@@ -30,7 +30,7 @@ Bu proje, nesneye dayalı programlama (OOP) ilkeleri kullanılarak bir **Kuaför
 ## 📂 Kurulum
 ```bash
 git clone <repo-url>
-cd kuafor-otomasyon
+cd berberotomation
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
