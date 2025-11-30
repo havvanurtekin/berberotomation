@@ -9,57 +9,76 @@
                 <h4>📅 Randevu Takvimi</h4>
             </div>
             <div class="card-body p-4">
-                <table class="table table-hover align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Tarih</th>
-                            <th>Başlangıç</th>
-                            <th>Bitiş</th>
-                            <th>Hizmet</th>
-                            <th>Çalışan</th>
-                            <th>Durum</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for appt in appointments %}
-                        <tr>
-                            <td>{{ appt.date }}</td>
-                            <td>{{ appt.start_time }}</td>
-                            <td>{{ appt.end_time }}</td>
-                            <td>{{ appt.service.name }}</td>
-                            <td>{{ appt.employee }}</td>
-                            <td>
-                                {% if appt.status == "pending" %}
-                                    <span class="badge bg-warning text-dark">Bekliyor</span>
-                                    <form method="post" action="{% url 'approve_appointment' appt.pk %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-success">Onayla</button>
-                                    </form>
-                                    <button type="button" onclick="showRejectForm({{ appt.pk }})" class="btn btn-sm btn-danger">Reddet</button>
-                                    <form method="post" action="{% url 'reject_appointment' appt.pk %}" id="reject-form-{{ appt.pk }}" style="display:none;" class="mt-2">
-                                        {% csrf_token %}
-                                        <input type="text" name="rejection_note" class="form-control form-control-sm mb-2" placeholder="Açıklama girin">
-                                        <button type="submit" class="btn btn-sm btn-danger">Gönder</button>
-                                    </form>
-                                {% elif appt.status == "confirmed" %}
-                                    <span class="badge bg-success">Onaylandı</span>
-                                {% elif appt.status == "rejected" %}
-                                    <span class="badge bg-danger">Reddedildi</span>
-                                    <small class="text-muted">({{ appt.rejection_note }})</small>
-                                {% elif appt.status == "cancelled" %}
-                                    <span class="badge bg-secondary">İptal Edildi</span>
-                                {% elif appt.status == "no_show" %}
-                                    <span class="badge bg-dark">Gelmedi</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted">Henüz randevunuz yok.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <!-- Responsive tablo -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="text-truncate">Tarih</th>
+                                <th class="text-truncate">Başlangıç</th>
+                                <th class="text-truncate">Bitiş</th>
+                                <th class="text-truncate">Hizmet</th>
+                                <th class="text-truncate">Çalışan</th>
+                                <th class="text-truncate">Müşteri</th>
+                                <th class="text-truncate">Telefon</th>
+                                <th class="text-truncate">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in appointments %}
+                            <tr>
+                                <td class="text-truncate">{{ appt.date }}</td>
+                                <td class="text-truncate">{{ appt.start_time }}</td>
+                                <td class="text-truncate">{{ appt.end_time }}</td>
+                                <td class="text-truncate">{{ appt.service.name }}</td>
+                                <td class="text-truncate">{{ appt.employee }}</td>
+                                <td class="text-truncate">
+                                    {% if appt.customer %}
+                                        {{ appt.customer.get_full_name }}
+                                    {% else %}
+                                        <span class="text-muted">Müşteri yok</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-truncate">
+                                    {% if appt.customer and appt.customer.phone_number %}
+                                        {{ appt.customer.phone_number }}
+                                    {% else %}
+                                        <span class="text-muted">Telefon yok</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-truncate">
+                                    {% if appt.status == "pending" %}
+                                        <span class="badge bg-warning text-dark">Bekliyor</span>
+                                        <form method="post" action="{% url 'approve_appointment' appt.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success">Onayla</button>
+                                        </form>
+                                        <button type="button" onclick="showRejectForm({{ appt.pk }})" class="btn btn-sm btn-danger">Reddet</button>
+                                        <form method="post" action="{% url 'reject_appointment' appt.pk %}" id="reject-form-{{ appt.pk }}" style="display:none;" class="mt-2">
+                                            {% csrf_token %}
+                                            <input type="text" name="rejection_note" class="form-control form-control-sm mb-2" placeholder="Açıklama girin">
+                                            <button type="submit" class="btn btn-sm btn-danger">Gönder</button>
+                                        </form>
+                                    {% elif appt.status == "confirmed" %}
+                                        <span class="badge bg-success">Onaylandı</span>
+                                    {% elif appt.status == "rejected" %}
+                                        <span class="badge bg-danger">Reddedildi</span>
+                                        <small class="text-muted">({{ appt.rejection_note }})</small>
+                                    {% elif appt.status == "cancelled" %}
+                                        <span class="badge bg-secondary">İptal Edildi</span>
+                                    {% elif appt.status == "no_show" %}
+                                        <span class="badge bg-dark">Gelmedi</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">Henüz randevunuz yok.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
                 <!-- Boş zamanları göster -->
                 {% if free_slots %}

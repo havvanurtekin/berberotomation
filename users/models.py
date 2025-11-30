@@ -1,16 +1,18 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from salon.models import Salon, Service
+from salon.models import Salon
 from django.core.exceptions import ValidationError
-
+from multiselectfield import MultiSelectField
 class Person(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-
+    ROLE_CHOICES = [
+        ("customer", "Customer"),
+        ("employee", "Employee"),
+    ]
+    roles = MultiSelectField(max_length=20, choices=ROLE_CHOICES, default="customer")
     # Çalışanlar için
     salon = models.ForeignKey(Salon, on_delete=models.SET_NULL, null=True, blank=True)
-    specialties = models.ManyToManyField(Service, blank=True)
-
     def __str__(self):
         return self.get_full_name() or self.username
 
@@ -53,3 +55,9 @@ class Availability(models.Model):
         # Proxy üzerinden kontrol
         if not Employee.objects.filter(pk=self.employee.pk).exists():
             raise ValidationError("Sadece çalışanlar için uygunluk tanımlanabilir.")
+
+class Role(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+
+    def __str__(self):
+        return self.name

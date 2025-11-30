@@ -14,10 +14,6 @@ def generate_available_slots(employee, salon, date, service):
     end = datetime.combine(date, salon.closing_time)
 
     existing = Appointment.objects.filter(employee=employee, date=date)
-    busy_ranges = [
-        (datetime.combine(date, a.start_time), datetime.combine(date, a.end_time))
-        for a in existing
-    ]
     duration = service.duration if service else 15
 
     slots = []
@@ -25,16 +21,29 @@ def generate_available_slots(employee, salon, date, service):
         slot_start = start
         slot_end = start + timedelta(minutes=duration)
 
-        # Çakışma kontrolü
-        overlaps = any(
-            slot_start < busy_end and slot_end > busy_start
-            for busy_start, busy_end in busy_ranges
+        # Bu slotta var olan randevu var mı?
+        appointment = next(
+            (a for a in existing
+             if slot_start.time() == a.start_time and slot_end.time() == a.end_time),
+            None
         )
+
+        if appointment:
+            if appointment.status == AppointmentStatus.PENDING:
+                status = "pending"   # turuncu
+            elif appointment.status == AppointmentStatus.CONFIRMED:
+                status = "confirmed" # kırmızı
+            elif appointment.status == AppointmentStatus.REJECTED:
+                status = "free"      # yeşil (tekrar kullanılabilir)
+            else:
+                status = "busy"
+        else:
+            status = "free"
 
         slots.append({
             "start": slot_start.time().strftime("%H:%M"),
             "end": slot_end.time().strftime("%H:%M"),
-            "status": "busy" if overlaps else "free"
+            "status": status
         })
 
         # Sonraki slot
@@ -45,10 +54,8 @@ def generate_available_slots(employee, salon, date, service):
 
 @login_required
 def create_appointment(request):
-    salon_id = request.GET.get("salon") or request.POST.get("salon")
-
     if request.method == "POST":
-        form = AppointmentForm(request.POST, salon_id=salon_id)
+        form = AppointmentForm(request.POST, available_slots=[])
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.customer = request.user
@@ -67,20 +74,13 @@ def create_appointment(request):
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"errors": form.errors}, status=400)
     else:
-        form = AppointmentForm(request.GET or None, salon_id=salon_id)
+        form = AppointmentForm(request.GET or None, available_slots=[])
 
-    # Dolu slotlar
     busy_slots = [
-        {
-            "employee": a.employee,
-            "date": a.date,
-            "start": a.start_time,
-            "end": a.end_time,
-        }
+        {"employee": a.employee, "date": a.date, "start": a.start_time, "end": a.end_time}
         for a in Appointment.objects.all()
     ]
 
-    # Müsait slotlar
     available_slots = []
     salon = form.data.get("salon")
     employee = form.data.get("employee")
@@ -97,11 +97,20 @@ def create_appointment(request):
         except Exception as e:
             print("Slot error:", e)
 
+    form = AppointmentForm(request.POST or None, available_slots=available_slots, initial={
+        "salon": salon,
+        "employee": employee,
+        "service": service,
+        "date": date_str,
+    })
+
     return render(request, "appointments/create.html", {
         "form": form,
         "busy_slots": busy_slots,
         "available_slots": available_slots,
     })
+
+
 
 
 @login_required

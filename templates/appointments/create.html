@@ -44,14 +44,17 @@
               </div>
               <div class="col-md-3 mb-3">
                 <label class="form-label"><i class="bi bi-clock me-1"></i>Başlangıç</label>
-                {{ form.start_time }}
+                {{ form.start_time }} <!-- gizli input -->
+                <input type="text" class="form-control" id="id_start_time_display" placeholder="--:--" readonly>
                 <div class="invalid-feedback" id="startError"></div>
               </div>
               <div class="col-md-3 mb-3">
                 <label class="form-label"><i class="bi bi-clock-history me-1"></i>Bitiş</label>
-                <input type="text" class="form-control" id="id_end_time" placeholder="--:--" readonly>
-                <div class="form-text">Hizmet süresine göre otomatik hesaplanır.</div>
+                {{ form.end_time }} <!-- gizli input -->
+                <input type="text" class="form-control" id="id_end_time_display" placeholder="--:--" readonly>
+                <div class="form-text">Slot seçildiğinde otomatik hesaplanır.</div>
               </div>
+
             </div>
 
             <button type="submit" class="btn btn-success w-100">
@@ -74,6 +77,18 @@
                 <button type="button" class="btn btn-danger slot-btn" disabled>
                   {{ slot.start }} - {{ slot.end }}
                 </button>
+              {% elif slot.status == "pending" %}
+                <button type="button" class="btn btn-warning slot-btn" disabled>
+                  {{ slot.start }} - {{ slot.end }} (İşlemde)
+                </button>
+              {% elif slot.status == "confirmed" %}
+                <button type="button" class="btn btn-danger slot-btn" disabled>
+                  {{ slot.start }} - {{ slot.end }} (Tamamlandı)
+                </button>
+              {% elif slot.status == "rejected" %}
+                <button type="button" class="btn btn-success slot-btn">
+                  {{ slot.start }} - {{ slot.end }} (Boş)
+                </button>
               {% else %}
                 <button type="button" class="btn btn-success slot-btn"
                         data-start="{{ slot.start }}" data-end="{{ slot.end }}">
@@ -81,8 +96,6 @@
                 </button>
               {% endif %}
             {% endfor %}
-
-
           </div>
           <div class="form-text mt-2">Bir slot seçtiğinizde saatler otomatik dolacaktır.</div>
         </div>
@@ -208,6 +221,8 @@ $(document).on('click', '.slot-btn', function() {
   const end = $(this).data('end');
   $('#id_start_time').val(start);
   $('#id_end_time').val(end);
+  $('#id_start_time_display').val(start);
+  $('#id_end_time_display').val(end);
 });
 
 

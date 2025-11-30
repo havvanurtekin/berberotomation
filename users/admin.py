@@ -1,32 +1,27 @@
 from django.contrib import admin
 from .models import Person, Customer, Employee
 
-# Ana kullanıcı modeli
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ("username", "get_full_name", "role", "salon")
-    list_filter = ("salon",)
+    list_display = ("username", "get_full_name", "get_roles", "salon")
+    list_filter = ("roles", "salon")   # MultiSelectField filtrelenebilir
     search_fields = ("username", "first_name", "last_name")
 
-    def role(self, obj):
-        if isinstance(obj, Customer):
-            return "Customer"
-        elif isinstance(obj, Employee):
-            return "Employee"
-        return "Person"
-    role.short_description = "Rol"
+    def get_roles(self, obj):
+        return ", ".join(obj.roles) if obj.roles else "-"
+    get_roles.short_description = "Roller"
 
-# Customer proxy modeli
+
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ("username", "get_full_name")
+    list_display = ("username", "get_full_name", "salon")
     search_fields = ("username", "first_name", "last_name")
 
     def get_queryset(self, request):
-        # Proxy zaten Customer'ları gösterir
-        return super().get_queryset(request)
+        qs = super().get_queryset(request)
+        return qs.filter(roles__contains="customer")
 
-# Employee proxy modeli
+
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = ("username", "get_full_name", "salon")
@@ -34,5 +29,5 @@ class EmployeeAdmin(admin.ModelAdmin):
     search_fields = ("username", "first_name", "last_name")
 
     def get_queryset(self, request):
-        # Proxy zaten Employee'leri gösterir
-        return super().get_queryset(request)
+        qs = super().get_queryset(request)
+        return qs.filter(roles__contains="employee")
